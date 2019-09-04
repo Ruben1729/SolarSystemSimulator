@@ -41,11 +41,12 @@ public class Loader {
 	private List<Integer> vbos = new ArrayList<Integer>();
 	private List<Integer> textures = new ArrayList<Integer>();
 
-	public RawModel loadToVAO(float[] positions, float[] textureCoords, int[] indices) {
+	public RawModel loadToVAO(float[] positions, float[] textureCoords, float[] normals, int[] indices) {
 		int vaoID = createVAO();
 		bindIndicesBuffer(indices);
 		storeDataInAttributeList(0, 3, positions);
 		storeDataInAttributeList(1, 2, textureCoords);
+		storeDataInAttributeList(2, 3, normals);
 		unbindVAO();
 		return new RawModel(vaoID, indices.length);
 	}
@@ -116,7 +117,7 @@ public class Loader {
 			int[] pixels = new int[img.getWidth() * img.getHeight()];
 			img.getRGB(0, 0, img.getWidth(), img.getHeight(), pixels, 0, img.getWidth());
 
-	        ByteBuffer buffer = ByteBuffer.allocateDirect(img.getWidth() * img.getHeight() * 4); //4 for RGBA, 3 for RGB
+	        ByteBuffer buffer = BufferUtils.createByteBuffer(img.getWidth() * img.getHeight() * 4);//ByteBuffer.allocateDirect(img.getWidth() * img.getHeight() * 4); //4 for RGBA, 3 for RGB
 	        int pSize = img.getColorModel().getPixelSize();
 	        if(pSize == 32)
 		        for(int y = 0; y < img.getHeight(); y++){
@@ -142,12 +143,12 @@ public class Loader {
 	        buffer.flip();
 			
 	        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img.getWidth(), img.getHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
-			if(!mipmap) {
+	        glGenerateMipmap(GL_TEXTURE_2D);
+	        if(!mipmap) {
 				result = new ModelTexture(texture, GL_TEXTURE_2D);
 				textures.add(result.getID());
 				return result;
 			}
-			glGenerateMipmap(GL_TEXTURE_2D);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, -0.4f);
 			result = new ModelTexture(texture, GL_TEXTURE_2D);

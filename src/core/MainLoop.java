@@ -1,20 +1,36 @@
 package core;
 
-import org.lwjgl.opengl.GL11;
-
-import input.KeyboardInputManager;
+import entities.Entity;
+import entities.Light;
+import entities.Planet;
+import entities.Sun;
 import model.RawModel;
 import model.TexturedModel;
 import render.DisplayManager;
+import render.FBO;
 import render.Loader;
+import render.MasterRenderer;
+import render.OBJLoader;
 import render.Renderer;
 import shaders.StaticShader;
 import textures.ModelTexture;
+import tools.Orbit;
 
+import static org.lwjgl.glfw.GLFW.glfwSetCursorPos;
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.*;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.joml.Vector3f;
+import org.lwjgl.glfw.GLFW.*;
+import org.lwjgl.opengl.GL11;
+
+import static org.lwjgl.glfw.GLFW.*;
+
+import camera.CameraFree;
+import camera.CameraTPS;
 
 public class MainLoop extends Thread{
 	
@@ -22,6 +38,11 @@ public class MainLoop extends Thread{
 	private static Thread mainThread;
 	private static DisplayManager display;
 	private static volatile boolean running = false;
+	
+	private static CameraFree camera;
+	private static Sun sun;
+	
+	private static List<Planet> planets = new ArrayList<Planet>();
 	
 	public static void main(String[] args) {
 		MainLoop loop = new MainLoop();
@@ -33,36 +54,30 @@ public class MainLoop extends Thread{
 		display = new DisplayManager();
 		display.create();
 		
-		Renderer renderer = new Renderer();
+		FBO fbo = FBO.create(DisplayManager.getWidth(), DisplayManager.getHeight())
+				.bind()
+				.createAttachment(GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, GL_COLOR_ATTACHMENT0, 8, false)
+				.createAttachment(GL_DEPTH_COMPONENT32, GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_ATTACHMENT, 8, false)
+				.bindAttachments()
+				.unbind();
+		
+		bindKeys();
+		
 		Loader loader = new Loader();
-		StaticShader shader = new StaticShader();
+		MasterRenderer renderer = new MasterRenderer();
 		
 		System.out.println("OpenGL version " +  glGetString(GL_VERSION));
 		// Models
-		float[] vertices = {
-				-0.5f, 0.5f, 0.0f, // 0
-				-0.5f, -0.5f, 0.0f,  // 1
-				0.5f, -0.5f, 0.0f,// 2
-				0.5f, 0.5f, 0.0f, // 3
-				
-		};
+		RawModel model = OBJLoader.loadObjModel("/sun/sun", loader);
+		TexturedModel texturedModel = new TexturedModel(model, loader.loadTexture("sun_paint.png", true));
+		sun = new Sun(texturedModel, new Vector3f(0, 0, 0), new Vector3f(0, 0, 0), 50);
 		
-		int[] indices = {
-			0, 1, 3,
-			3, 1, 2
-		};
+		loadPlanets(loader);
 		
-		float[] textureCoords = {
-				0, 0,
-				0, 1,
-				1, 1,
-				1, 0
-		};
+		Light light = new Light(new Vector3f(0, 0, -500), new Vector3f(1, 1, 1));
 		
-		RawModel model = loader.loadToVAO(vertices, textureCoords, indices);
-		ModelTexture texture = loader.loadTexture("dog.png", false);
-		
-		TexturedModel texturedModel = new TexturedModel(model, texture);
+		camera = new CameraFree();
+		camera.setPosition(new Vector3f(0, 0, 2000));
 		
 		// Game Loop variables
 		long lastFrame = System.nanoTime();
@@ -94,27 +109,95 @@ public class MainLoop extends Thread{
 			float deltaTime = ((float) (currentFrame - lastFrame) / 1000000000.0f);
 			lastFrame = currentFrame;
 			
+			sun.increaseRotation(0, 1, 0);
+			
+			// fbo.bind();
+			
+			//How to add a new entity
+			renderer.processEntity(sun);
+			for(Planet p : planets) {
+				renderer.processEntity(p);
+			}
+			
+			renderer.render(light,  camera);
+			
+			// fbo.unbind();
+			// fbo.resolveToDisplay(GL_COLOR_ATTACHMENT0);
 			// Render
-			
-			display.setBackgroundColor(0.5f, 1.0f, 0.5f, 1.0f);
-			display.clear();
-
-			renderer.prepare();
-			shader.start();
-			
-			renderer.render(texturedModel);
-			shader.stop();
-			
 			display.update();
 			fps++;
 		}
 		
-		shader.cleanUp();
+		renderer.cleanup();
 		loader.cleanUp();
 	}
 	
 	private void tick() {
 		//logic
+		camera.tick();
+		sun.tick();
+
+		for(Planet p : planets) {
+			p.tick();
+		}
+		
+		centerCursor();
+	}
+	
+	private void loadPlanets(Loader loader) {
+		Orbit earthOrbit = new Orbit(980 + sun.getScale(), 1000 + sun.getScale(), 100, sun.getPosition());
+		Planet earth = new Planet(getTexturedModel("/earth/earth", loader, "Earth_2k.png"), new Vector3f((float)earthOrbit.getX(), (float)earthOrbit.getY(), 0), new Vector3f(0, 0, 0), 10, earthOrbit);
+		planets.add(earth);
+	}
+	
+	private TexturedModel getTexturedModel(String path, Loader loader, String textureName) {
+		return new TexturedModel(OBJLoader.loadObjModel(path, loader), loader.loadTexture(textureName, true));
+	}
+	
+	private void bindKeys() {
+		bindKeyDown(GLFW_KEY_ESCAPE, () -> {
+			glfwSetWindowShouldClose(display.getWindow(), true);
+		});
+		
+		bindKeyDown(GLFW_KEY_W, ()->{
+			camera.setForward(true);
+		});
+		
+		bindKeyRelease(GLFW_KEY_W, ()->{
+			camera.setForward(false);
+		});
+		
+		bindKeyDown(GLFW_KEY_S, ()->{
+			camera.setBackward(true);
+		});
+		
+		bindKeyRelease(GLFW_KEY_S, ()->{
+			camera.setBackward(false);
+		});
+		
+		bindKeyDown(GLFW_KEY_A, ()->{
+			camera.setLeft(true);
+		});
+		
+		bindKeyRelease(GLFW_KEY_A, ()->{
+			camera.setLeft(false);
+		});
+		
+		bindKeyDown(GLFW_KEY_D, ()->{
+			camera.setRight(true);
+		});
+		
+		bindKeyRelease(GLFW_KEY_D, ()->{
+			camera.setRight(false);
+		});
+	}
+	
+	private void bindKeyDown(int code, Runnable callback) {
+		display.input.registerKeyDown(code, callback);
+	}
+	
+	private void bindKeyRelease(int code, Runnable callback) {
+		display.input.registerKeyUp(code, callback);
 	}
 	
 	public synchronized void start() {
@@ -140,5 +223,15 @@ public class MainLoop extends Thread{
 	
 	public static boolean isRunning() {
 		return running;
+	}
+	
+	public static CameraFree getCamera() {
+		return camera;
+	}
+	
+	public void centerCursor() {
+		glfwSetCursorPos(display.getWindow(), (DisplayManager.getWidth() / 2), (DisplayManager.getHeight() / 2));
+		camera.setDX(0);
+		camera.setDY(0);
 	}
 }

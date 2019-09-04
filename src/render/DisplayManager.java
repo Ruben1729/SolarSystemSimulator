@@ -10,18 +10,21 @@ import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.system.MemoryStack.*;
 import static org.lwjgl.system.MemoryUtil.*;
 
+import input.InputManager;
 import input.KeyboardInputManager;
-import math.Vec3f;
+import input.MouseInputManager;
 
 public class DisplayManager {
 
 	private static final int WIDTH = 1280, HEIGHT = 720;
 	private static final String TITLE = "Solar System Simulator";
-	private static long window;
+	private long window;
 	
-	private static KeyboardInputManager keyIn = new KeyboardInputManager();
+	public InputManager input;
 	
-	public DisplayManager() {}
+	public DisplayManager() {
+		input = new InputManager();
+	}
 	
 	public void create() {
 		if(!glfwInit()) {
@@ -44,7 +47,7 @@ public class DisplayManager {
 		window = glfwCreateWindow(WIDTH, HEIGHT, TITLE, 0, 0);
 		
 		// Keyboard input
-		glfwSetKeyCallback(window, keyIn);
+		input.create(window);
 		
 		if(window == 0) { 
 			System.err.println("ERROR: Window could not be created");
@@ -57,6 +60,8 @@ public class DisplayManager {
 		GLFWVidMode videoMode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 		glfwSetWindowPos(window, (videoMode.width() - WIDTH) / 2, (videoMode.height() - HEIGHT) / 2);
 		glfwShowWindow(window);
+		
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	}
 	
 	public void update() {
@@ -75,15 +80,15 @@ public class DisplayManager {
 		return glfwWindowShouldClose(window);
 	}
 	
-	public void setBackgroundColor(float r, float g, float b, float a) {
-		glClearColor(r, g, b, a);
-	}
-	
-	public void clear() {
-		glClear(GL11.GL_COLOR_BUFFER_BIT);
-	}
-	
 	public long getWindow() {
 		return this.window;
+	}
+	
+	public static int getWidth() {
+		return WIDTH;
+	}
+	
+	public static int getHeight() {
+		return HEIGHT;
 	}
 }
