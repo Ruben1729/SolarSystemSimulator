@@ -1,78 +1,110 @@
 package tools;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.joml.Vector3f;
 
 public class Orbit {
 
-	private double a, b;
-	private double x, y;
+	private float a, b, c;
+	private Vector3f pos;
+	
+	private float apo, peri;
+	
+	private double alpha;
 	
 	private Vector3f center;
-	private Vector3f foci;
-	private Vector3f foci2;
+	private Vector3f focus;
+	private Vector3f focus2;
 	
 	private double mass;
 	
 	private final double G = 6.67529;
 	
-	public Orbit(double peri, double apo, double mass, Vector3f foci) {
-		this.a = (double)(apo + peri)/ 2;
+	public Orbit(double peri, double apo, double mass, Vector3f focus) {
+		this.a = (float)(apo + peri)/ 2;
 		
-		this.foci2 = new Vector3f(0);
-		this.foci2.x = (float)((foci.x + apo) - peri);
-		this.foci2.y = foci.y;
+		this.focus2 = new Vector3f(0);
+		this.focus2.x = (float)((focus.x + apo) - peri);
+		this.focus2.z = focus.z;
 		
-		double c = (foci2.x - foci.x)/2;
+		this.c = (focus2.x - focus.x)/2;
 		
-		this.b = Math.sqrt((Math.pow(a, 2) - Math.pow(c, 2)));
+		this.b = (float)Math.sqrt((Math.pow(a, 2) - Math.pow(c, 2)));
 		
 		this.center = new Vector3f(0, 0, 0);
 		
-		this.center.x = (float)(foci.x + c);
-		this.center.y = foci.y;
+		this.center.x = (float)(focus.x + c);
+		this.center.z = focus.z;
 		
-		this.foci = foci;
+		this.apo = (float) apo;
+		this.peri = (float) peri;
 		
-		this.x = this.center.x - a;
-		this.y = this.center.y;
+		this.focus = focus;
+		
+		this.pos = new Vector3f((float)(this.center.x - a), 0.0f, (float)this.center.z);
 		
 		this.mass = mass;
+		
+		this.alpha = 0;
 	}
 	
 	public void tick() {
 		
-		if(this.x == this.center.x + a || this.y > this.center.y) {
-			this.x -= 10;
-			this.y = (Math.sqrt(1-(Math.pow(x - center.x, 2)/Math.pow(a, 2))) * b) + center.y;
-		} else {
-			this.x += 10;
-			this.y = center.y - (Math.sqrt(1-(Math.pow(x - center.x, 2)/Math.pow(a, 2))) * b);
-		}
+		center = new Vector3f(focus.x + c, focus.z, 0);
+		
+		float dist = distance(pos, center);
+		
+		float deltaAlpha = (float)Math.asin(getVel()/dist);
+		
+		pos = new Vector3f((float)((center.x + a) * Math.cos(alpha)), 0, (float)((center.z + b) * Math.sin(alpha)));
+		
+		alpha += deltaAlpha;
 		
 	}
 	
+	public List getAllPoints() {
+		
+		center = new Vector3f(focus.x + c, focus.z, 0);
+		List<Vector3f> points = new ArrayList<Vector3f>();
+		
+		for(float beta = 0; beta < 360; beta ++ ) {
+			pos = new Vector3f((float)((center.x + a) * Math.cos(Math.toRadians(beta))), 0, (float)((center.z + b) * Math.sin(Math.toRadians(beta))));
+			points.add(pos);
+		}
+		return points;
+	}
+	
+	public float getZGivenX(float x) {
+		return (float)(this.center.z +  (b * (Math.sqrt(1 - ((Math.pow(x, 2) - Math.pow(center.x, 2)/Math.pow(a, 2)))))));
+	}
+	public float getNegZGivenX(float x) {
+		return (float)(this.center.z - (b * (Math.sqrt(1 - ((Math.pow(x, 2) - Math.pow(center.x, 2)/Math.pow(a, 2)))))));
+	}
+	
 	public double getVel() {
-		return Math.sqrt((G*mass)*((2/distanceFromOrbit()) - (1/a)));
+		return Math.sqrt((G*mass)*(Math.abs(2/distanceFromOrbit()) - (1/a)));
 	}
 	
 	public double distanceFromOrbit() {
-		return Math.sqrt(Math.pow((x - foci.x), 2) - Math.pow((y - foci.y), 2));
+		return distance(pos, focus);
+	}
+	
+	public float distance(Vector3f pos1, Vector3f pos2) {
+		return (float)Math.sqrt(Math.pow((pos1.x - pos2.x), 2) + Math.pow((pos1.z - pos2.z), 2));
 	}
 
 	public double getX() {
-		return x;
+		return this.pos.x;
 	}
-
-	public void setX(double x) {
-		this.x = x;
-	}
-
-	public double getY() {
-		return y;
+	
+	public double getZ() {
+		return this.pos.z;
 	}
 	
 	public float equation() {
-		return (float) ((Math.pow((x - this.center.x), 2)/Math.pow(a, 2)) + (Math.pow((y - this.center.y), 2)/Math.pow(b, 2)));
+		return (float) ((Math.pow((this.pos.x - this.center.x), 2)/Math.pow(a, 2)) + (Math.pow((this.pos.z - this.center.z), 2)/Math.pow(b, 2)));
 	}
 	
 	public float getA() {

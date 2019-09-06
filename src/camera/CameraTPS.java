@@ -37,7 +37,7 @@ public class CameraTPS extends Camera{
 		lookAt(target.getPosition());
 		
 		if(!target.getVelocity().equals(new Vector3f(0)))
-			target.setRotation(new Vector3f(target.getRotation().x, target.getRotation().y, (-rot.y + 180)));
+			target.setRotation(new Vector3f(target.getRotation().x, target.getRotation().y, (-rot.y + 180 + angleAroundTarget)));
 	}
 	
 	public Entity getTarget() {
@@ -52,6 +52,8 @@ public class CameraTPS extends Camera{
 		this.distanceFromTarget = distance;
 	}
 	
-	
+	public void changeDistanceFromTarget(float diff) {
+		this.distanceFromTarget -= diff;
+	}
 
 }

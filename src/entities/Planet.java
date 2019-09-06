@@ -3,14 +3,21 @@ package entities;
 import org.joml.Vector3f;
 
 import model.TexturedModel;
+import render.Loader;
+import render.OBJLoader;
 import tools.Orbit;
 
 public class Planet extends Entity{
 
 	private Orbit orbit;
 	
-	public Planet(TexturedModel model, Vector3f position, Vector3f rotation, float scale, Orbit orbit) {
-		super(model, position, rotation, scale);
+	public Planet(Loader loader, float scale, String planetName, float peri, float apo, float mass, Entity target) {
+		super(getTexturedModel("/" + planetName + "/" + planetName, loader, planetName + ".png"), new Vector3f(), new Vector3f(), scale);
+		
+		Orbit orbit = new Orbit(peri, apo, mass, target.getPosition());
+		
+		setPosition(new Vector3f((float)orbit.getX(), 0, (float)orbit.getZ()));
+		
 		this.orbit = orbit;
 		// TODO Auto-generated constructor stub
 	}
@@ -21,7 +28,7 @@ public class Planet extends Entity{
 	public void tick() {
 		
 		orbit.tick();
-		this.setPosition(new Vector3f((float) orbit.getX(), (float) orbit.getY(), 0));
+		this.setPosition(new Vector3f((float) orbit.getX(), 0, (float) orbit.getZ()));
 		// updateVelocity();
 		// translate(getVelocity());
 		
@@ -33,24 +40,11 @@ public class Planet extends Entity{
 	public void updateVelocity() {
 		
 		Vector3f direction = new Vector3f(0);
-		
-//		if(KeyboardInput.isKeyDown(Keybinds.PLYR_FORWARD))
-//			direction.add(new Vector3f(0, 0, -1));
-//		
-//		if(KeyboardInput.isKeyDown(Keybinds.PLYR_BACKWARD))
-//			direction.add(new Vector3f(0, 0, 1));
-//
-//		
-//		if(KeyboardInput.isKeyDown(Keybinds.PLYR_LEFT))
-//			direction.add(new Vector3f(-1, 0, 0));
-//
-//		
-//		if(KeyboardInput.isKeyDown(Keybinds.PLYR_RIGHT))
-//			direction.add(new Vector3f(1, 0, 0));
-		
-//		direction.mul(speed);
-//		setVelocity(direction.mulTransposePosition(Game.getCamera().getYawTransform()));
-		
+			
+	}
+	
+	private static TexturedModel getTexturedModel(String path, Loader loader, String textureName) {
+		return new TexturedModel(OBJLoader.loadObjModel(path, loader), loader.loadTexture(textureName, true));
 	}
 	
 	//GETTERS AND SETTERS

@@ -35,7 +35,7 @@ public class CameraFree extends Camera {
 			direction.add(right());
 		
 		// speed
-		direction.mul(20);
+		direction.mul(200);
 		setVelocity(direction);
 	}
 	

@@ -34,13 +34,13 @@ public class DisplayManager {
 		
 		glfwWindowHint(GLFW_VISIBLE,GLFW_FALSE);
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-		
+	
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-
+	    
 	    // Compatibility profile.
 	    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
-
+	    
 	    // Enable forward compatibility.
 	    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_FALSE);
 	    

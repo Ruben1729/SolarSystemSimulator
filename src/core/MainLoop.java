@@ -3,7 +3,9 @@ package core;
 import entities.Entity;
 import entities.Light;
 import entities.Planet;
+import entities.PlanetManager;
 import entities.Sun;
+import model.Primitive;
 import model.RawModel;
 import model.TexturedModel;
 import render.DisplayManager;
@@ -21,6 +23,7 @@ import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL30.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.joml.Vector3f;
@@ -29,6 +32,7 @@ import org.lwjgl.opengl.GL11;
 
 import static org.lwjgl.glfw.GLFW.*;
 
+import camera.Camera;
 import camera.CameraFree;
 import camera.CameraTPS;
 
@@ -40,9 +44,18 @@ public class MainLoop extends Thread{
 	private static volatile boolean running = false;
 	
 	private static CameraFree camera;
+	private static CameraTPS tpsCamera;
+	
+	private static int targetIndex = 0;
+	
 	private static Sun sun;
 	
-	private static List<Planet> planets = new ArrayList<Planet>();
+	private static boolean renderOrbits = true;
+	private static boolean tpsOn = false;
+	
+	private static PlanetManager pMan;
+	
+	private static List<Primitive> lines = new ArrayList<Primitive>();
 	
 	public static void main(String[] args) {
 		MainLoop loop = new MainLoop();
@@ -69,15 +82,21 @@ public class MainLoop extends Thread{
 		System.out.println("OpenGL version " +  glGetString(GL_VERSION));
 		// Models
 		RawModel model = OBJLoader.loadObjModel("/sun/sun", loader);
-		TexturedModel texturedModel = new TexturedModel(model, loader.loadTexture("sun_paint.png", true));
-		sun = new Sun(texturedModel, new Vector3f(0, 0, 0), new Vector3f(0, 0, 0), 50);
+		TexturedModel texturedModel = new TexturedModel(model, loader.loadTexture("sun.png", true));
+		sun = new Sun(texturedModel, new Vector3f(0, 0, 0), new Vector3f(0, 0, 0), 9.29f);
 		
-		loadPlanets(loader);
+		pMan = new PlanetManager(sun);
+		pMan.loadPlanets(loader);
+		lines = pMan.getDrawnOrbits();
 		
-		Light light = new Light(new Vector3f(0, 0, -500), new Vector3f(1, 1, 1));
+		Light light = new Light(new Vector3f(0, 0, 60000), new Vector3f(1, 1, 1));
 		
 		camera = new CameraFree();
-		camera.setPosition(new Vector3f(0, 0, 2000));
+		
+		tpsCamera = new CameraTPS(pMan.getCurrentTarget());
+		tpsCamera.lookAt(pMan.getCurrentTargetPosition());
+		
+		camera.setPosition(new Vector3f(0, 0, 20000));
 		
 		// Game Loop variables
 		long lastFrame = System.nanoTime();
@@ -85,6 +104,8 @@ public class MainLoop extends Thread{
 		long lastTick = System.nanoTime();
 		int fps = 0;
 		int ticks = 0;
+		
+		Camera renderCamera;
 		
 		// Game Loop
 		while(!display.close()) {
@@ -111,53 +132,77 @@ public class MainLoop extends Thread{
 			
 			sun.increaseRotation(0, 1, 0);
 			
-			// fbo.bind();
-			
 			//How to add a new entity
 			renderer.processEntity(sun);
-			for(Planet p : planets) {
-				renderer.processEntity(p);
-			}
+			renderer.processEntities(pMan.getPlanets());
 			
-			renderer.render(light,  camera);
+			if(tpsOn)
+				renderCamera = tpsCamera;
+			else
+				renderCamera = camera;
 			
-			// fbo.unbind();
-			// fbo.resolveToDisplay(GL_COLOR_ATTACHMENT0);
+			fbo.bind();
+			
+			renderer.render(light,  renderCamera);
+			
+			fbo.unbind();
+			fbo.resolveToDisplay(GL_COLOR_ATTACHMENT0);
+			
+			if(renderOrbits)
+				for(Primitive l : lines) {
+					renderer.renderPrimitive(renderCamera, l);
+				}
+			
 			// Render
 			display.update();
 			fps++;
 		}
 		
-		renderer.cleanup();
+		renderer.cleanUp();
 		loader.cleanUp();
 	}
 	
 	private void tick() {
 		//logic
-		camera.tick();
+		if(tpsOn)
+			tpsCamera.tick();
+		else
+			camera.tick();
 		sun.tick();
 
-		for(Planet p : planets) {
+		for(Planet p : pMan.getPlanets()) {
 			p.tick();
 		}
 		
 		centerCursor();
 	}
 	
-	private void loadPlanets(Loader loader) {
-		Orbit earthOrbit = new Orbit(980 + sun.getScale(), 1000 + sun.getScale(), 100, sun.getPosition());
-		Planet earth = new Planet(getTexturedModel("/earth/earth", loader, "Earth_2k.png"), new Vector3f((float)earthOrbit.getX(), (float)earthOrbit.getY(), 0), new Vector3f(0, 0, 0), 10, earthOrbit);
-		planets.add(earth);
-	}
-	
-	private TexturedModel getTexturedModel(String path, Loader loader, String textureName) {
-		return new TexturedModel(OBJLoader.loadObjModel(path, loader), loader.loadTexture(textureName, true));
-	}
-	
 	private void bindKeys() {
 		bindKeyDown(GLFW_KEY_ESCAPE, () -> {
 			glfwSetWindowShouldClose(display.getWindow(), true);
 		});
+		
+		bindKeyDown(GLFW_KEY_TAB, ()->{
+			if(tpsOn) {
+				pMan.updateTarget();
+				tpsCamera.setTarget(pMan.getCurrentTarget());
+				tpsCamera.lookAt(pMan.getCurrentTargetPosition());
+			}
+		});
+		
+		bindKeyRelease(GLFW_KEY_TAB, ()->{});
+		
+		bindKeyDown(GLFW_KEY_E, ()->{
+			tpsOn = !tpsOn;
+		});
+		
+		bindKeyRelease(GLFW_KEY_E, ()->{});
+		
+		bindKeyDown(GLFW_KEY_Q, ()->{
+			renderOrbits = !renderOrbits;
+		});
+		
+		bindKeyRelease(GLFW_KEY_Q, ()->{});
 		
 		bindKeyDown(GLFW_KEY_W, ()->{
 			camera.setForward(true);
@@ -225,13 +270,22 @@ public class MainLoop extends Thread{
 		return running;
 	}
 	
-	public static CameraFree getCamera() {
-		return camera;
+	public static Camera getCamera() {
+		if(tpsOn)
+			return tpsCamera;
+		else
+			return camera;
 	}
 	
 	public void centerCursor() {
 		glfwSetCursorPos(display.getWindow(), (DisplayManager.getWidth() / 2), (DisplayManager.getHeight() / 2));
-		camera.setDX(0);
-		camera.setDY(0);
+		
+		if(tpsOn){
+			tpsCamera.setDX(0);
+			tpsCamera.setDY(0);
+		} else {
+			camera.setDX(0);
+			camera.setDY(0);
+		}
 	}
 }

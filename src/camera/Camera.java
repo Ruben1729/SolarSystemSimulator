@@ -60,7 +60,7 @@ public abstract class Camera {
 		float pitch = (float) toDegrees(atan(dir.y / horizLength));
 		
 		// Apply the rotation to the camera.
-		this.rot = new Vector3f(pitch, yaw, 0.0f);
+		this.rot = new Vector3f(-pitch, yaw, 0.0f);
 		
 	}
 	

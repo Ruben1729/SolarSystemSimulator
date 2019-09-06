@@ -40,9 +40,9 @@ public class FBO {
 			if(texture) {
 				id = glGenTextures();
 				glBindTexture(GL_TEXTURE_2D, id);
-				glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, pixelFormat, dataType, (ByteBuffer) null);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+				glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, pixelFormat, GL_UNSIGNED_BYTE, (ByteBuffer) null);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 				glFramebufferTexture2D(GL_FRAMEBUFFER, glAttachment, GL_TEXTURE_2D, id, 0);
 				glBindTexture(GL_TEXTURE_2D, 0);
 			} else {
@@ -123,6 +123,8 @@ public class FBO {
 	
 	public static FBO create(int width, int height) {
 		int id = glGenFramebuffers();
+		glBindFramebuffer(GL_FRAMEBUFFER, id);
+		glDrawBuffer(GL_COLOR_ATTACHMENT0);
 		return new FBO(id, width, height);
 	}
 }
