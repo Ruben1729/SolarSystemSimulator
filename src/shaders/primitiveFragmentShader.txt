@@ -1,9 +1,11 @@
 #version 400 core
 
-out vec4 out_color;
+layout(location = 0) out vec4 out_color;
+layout(location = 1) out vec4 out_color_bloom;
 
 uniform vec3 color;
 
 void main(void) {
 	out_color = vec4(color, 1);
+	out_color_bloom = vec4(0);
 }

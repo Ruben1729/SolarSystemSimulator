@@ -2,6 +2,7 @@ package entities;
 
 import org.joml.Vector3f;
 
+import core.MainLoop;
 import model.TexturedModel;
 import render.Loader;
 import render.OBJLoader;
@@ -10,9 +11,12 @@ import tools.Orbit;
 public class Planet extends Entity{
 
 	private Orbit orbit;
+	private float rotationSpeed = 9.0f;
+	private float dayLength = 24.0f;
+	private float speed;
 	
-	public Planet(Loader loader, float scale, String planetName, float peri, float apo, float mass, Entity target) {
-		super(getTexturedModel("/" + planetName + "/" + planetName, loader, planetName + ".png"), new Vector3f(), new Vector3f(), scale);
+	public Planet(Loader loader, float scale, String planetName, float peri, float apo, float mass, Vector3f rot, Entity target) {
+		super(getTexturedModel("/" + planetName + "/" + planetName, loader, planetName + ".png"), new Vector3f(), rot, scale);
 		
 		Orbit orbit = new Orbit(peri, apo, mass, target.getPosition());
 		
@@ -21,14 +25,15 @@ public class Planet extends Entity{
 		this.orbit = orbit;
 		// TODO Auto-generated constructor stub
 	}
-
-	private float speed;
-	
 	
 	public void tick() {
 		
 		orbit.tick();
 		this.setPosition(new Vector3f((float) orbit.getX(), 0, (float) orbit.getZ()));
+		
+		// Rotate the planet
+		increaseRotation(new Vector3f(0, (rotationSpeed * MainLoop.daySpeed/dayLength), 0));
+		
 		// updateVelocity();
 		// translate(getVelocity());
 		
@@ -58,6 +63,14 @@ public class Planet extends Entity{
 	
 	public Orbit getOrbit() {
 		return orbit;
+	}
+	
+	public void setRotationSpeed(float speed) {
+		this.rotationSpeed = speed;
+	}
+	
+	public void setDayLength(float length) {
+		this.dayLength = length;
 	}
 	
 }

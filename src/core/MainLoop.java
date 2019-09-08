@@ -13,6 +13,7 @@ import render.FBO;
 import render.Loader;
 import render.MasterRenderer;
 import render.OBJLoader;
+import render.PostProcessing;
 import render.Renderer;
 import shaders.StaticShader;
 import textures.ModelTexture;
@@ -46,12 +47,14 @@ public class MainLoop extends Thread{
 	private static CameraFree camera;
 	private static CameraTPS tpsCamera;
 	
+	public static float daySpeed = 6.0f;
+	
 	private static int targetIndex = 0;
 	
 	private static Sun sun;
 	
 	private static boolean renderOrbits = true;
-	private static boolean tpsOn = false;
+	public static boolean tpsOn = false;
 	
 	private static PlanetManager pMan;
 	
@@ -69,8 +72,9 @@ public class MainLoop extends Thread{
 		
 		FBO fbo = FBO.create(DisplayManager.getWidth(), DisplayManager.getHeight())
 				.bind()
-				.createAttachment(GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, GL_COLOR_ATTACHMENT0, 8, false)
-				.createAttachment(GL_DEPTH_COMPONENT32, GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_ATTACHMENT, 8, false)
+				.createAttachment(GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, GL_COLOR_ATTACHMENT0, 1, true)
+				.createAttachment(GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, GL_COLOR_ATTACHMENT1, 1, true)// attachment1 because we are using 0 // true because we are not rendering to a buffer
+				.createAttachment(GL_DEPTH_COMPONENT32, GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_ATTACHMENT, 1, true)
 				.bindAttachments()
 				.unbind();
 		
@@ -78,25 +82,26 @@ public class MainLoop extends Thread{
 		
 		Loader loader = new Loader();
 		MasterRenderer renderer = new MasterRenderer();
+		PostProcessing pp = new PostProcessing(loader);
 		
-		System.out.println("OpenGL version " +  glGetString(GL_VERSION));
 		// Models
 		RawModel model = OBJLoader.loadObjModel("/sun/sun", loader);
 		TexturedModel texturedModel = new TexturedModel(model, loader.loadTexture("sun.png", true));
-		sun = new Sun(texturedModel, new Vector3f(0, 0, 0), new Vector3f(0, 0, 0), 9.29f);
+		texturedModel.setApplyBloom(true);
+		sun = new Sun(texturedModel, new Vector3f(0, 0, 0), new Vector3f(0, 0, 0), 15.1636f);
 		
 		pMan = new PlanetManager(sun);
 		pMan.loadPlanets(loader);
 		lines = pMan.getDrawnOrbits();
 		
-		Light light = new Light(new Vector3f(0, 0, 60000), new Vector3f(1, 1, 1));
+		Light light = new Light(sun.getPosition(), new Vector3f(1, 1, 1));
 		
 		camera = new CameraFree();
 		
 		tpsCamera = new CameraTPS(pMan.getCurrentTarget());
 		tpsCamera.lookAt(pMan.getCurrentTargetPosition());
 		
-		camera.setPosition(new Vector3f(0, 0, 20000));
+		camera.setPosition(new Vector3f(0, 0, 100));
 		
 		// Game Loop variables
 		long lastFrame = System.nanoTime();
@@ -130,7 +135,7 @@ public class MainLoop extends Thread{
 			float deltaTime = ((float) (currentFrame - lastFrame) / 1000000000.0f);
 			lastFrame = currentFrame;
 			
-			sun.increaseRotation(0, 1, 0);
+			sun.increaseRotation(0, -1, 0);
 			
 			//How to add a new entity
 			renderer.processEntity(sun);
@@ -145,13 +150,13 @@ public class MainLoop extends Thread{
 			
 			renderer.render(light,  renderCamera);
 			
-			fbo.unbind();
-			fbo.resolveToDisplay(GL_COLOR_ATTACHMENT0);
-			
 			if(renderOrbits)
 				for(Primitive l : lines) {
 					renderer.renderPrimitive(renderCamera, l);
 				}
+			
+			fbo.unbind();
+			pp.run(fbo.getAttachments().get(0).id, fbo.getAttachments().get(1).id);
 			
 			// Render
 			display.update();
@@ -182,7 +187,14 @@ public class MainLoop extends Thread{
 			glfwSetWindowShouldClose(display.getWindow(), true);
 		});
 		
+		// Camera related keybinds
 		bindKeyDown(GLFW_KEY_TAB, ()->{
+			tpsOn = !tpsOn;
+		});
+		
+		bindKeyRelease(GLFW_KEY_TAB, ()->{});
+		
+		bindKeyDown(GLFW_KEY_E, ()->{
 			if(tpsOn) {
 				pMan.updateTarget();
 				tpsCamera.setTarget(pMan.getCurrentTarget());
@@ -190,19 +202,43 @@ public class MainLoop extends Thread{
 			}
 		});
 		
-		bindKeyRelease(GLFW_KEY_TAB, ()->{});
-		
-		bindKeyDown(GLFW_KEY_E, ()->{
-			tpsOn = !tpsOn;
-		});
-		
 		bindKeyRelease(GLFW_KEY_E, ()->{});
 		
 		bindKeyDown(GLFW_KEY_Q, ()->{
-			renderOrbits = !renderOrbits;
+			if(tpsOn) {
+				pMan.updateTarget(-1);
+				tpsCamera.setTarget(pMan.getCurrentTarget());
+				tpsCamera.lookAt(pMan.getCurrentTargetPosition());
+			}
 		});
 		
 		bindKeyRelease(GLFW_KEY_Q, ()->{});
+		
+		// Orbit related keybinds
+		bindKeyDown(GLFW_KEY_X, ()->{
+			renderOrbits = !renderOrbits;
+		});
+		
+		bindKeyRelease(GLFW_KEY_X, ()->{});
+		
+		
+		// Movement related keybinds
+		bindKeyDown(GLFW_KEY_R, ()->{
+			daySpeed ++;
+		});
+		
+		bindKeyRelease(GLFW_KEY_R, ()->{
+			
+		});
+		
+		bindKeyDown(GLFW_KEY_F, ()->{
+			if(daySpeed - 1 <= 0)
+				daySpeed --;
+		});
+		
+		bindKeyRelease(GLFW_KEY_F, ()->{
+			
+		});
 		
 		bindKeyDown(GLFW_KEY_W, ()->{
 			camera.setForward(true);

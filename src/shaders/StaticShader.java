@@ -17,6 +17,8 @@ public class StaticShader extends ShaderProgram{
 	private int location_shineDamper;
 	private int location_reflectivity;
 	
+	private int location_applyBloom;
+	
 	public StaticShader() {
 		super(VERTEX_FILE, FRAGMENT_FILE);
 		// TODO Auto-generated constructor stub
@@ -40,6 +42,11 @@ public class StaticShader extends ShaderProgram{
 		location_lightColor = getUniformLocation("lightColor");
 		location_shineDamper = getUniformLocation("shineDamper");
 		location_reflectivity = getUniformLocation("reflectivity");
+		location_applyBloom = getUniformLocation("applyBloom");
+	}
+	
+	public void loadApplyBloom(boolean applyBloom) {
+		loadBoolean(location_applyBloom, applyBloom);
 	}
 	
 	public void loadShineVariables(float damper, float reflectivity) {

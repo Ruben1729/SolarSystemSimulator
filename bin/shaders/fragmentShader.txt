@@ -5,14 +5,23 @@ in vec3 surfaceNormal;
 in vec3 toLightVector;
 in vec3 toCameraVector;
 
-out vec4 out_color;
+layout(location = 0) out vec4 out_color;
+layout(location = 1) out vec4 out_bloom_color;
 
 uniform sampler2D textureSampler;
 uniform vec3 lightColor;
 uniform float shineDamper;
 uniform float reflectivity;
+uniform bool applyBloom;
 
 void main(void) {
+	
+	if(applyBloom){
+		out_color = texture(textureSampler, pass_textureCoords);
+		out_bloom_color = out_color;
+		
+		return;
+	}
 	
 	vec3 unitNormal = normalize(surfaceNormal);
 	vec3 unitLightNormal = normalize(toLightVector);
@@ -32,4 +41,5 @@ void main(void) {
 	vec3 finalSpecular = dampedFactor * reflectivity * lightColor;
 
 	out_color = vec4(diffuse, 1.0) * texture(textureSampler, pass_textureCoords) + vec4(finalSpecular, 1.0);
+	out_bloom_color = vec4(0);
 }

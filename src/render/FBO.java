@@ -15,12 +15,14 @@ public class FBO {
 	private int width, height;
 	private List<FBOAttachment> attachments = new ArrayList<FBOAttachment>();
 	
-	private static class FBOAttachment {
+	public static class FBOAttachment {
 		public int id;
 		public int glAttachment;
 		public boolean texture;
 		
 		protected FBOAttachment(int width, int height, int internalFormat, int pixelFormat, int dataType, int glAttachment, int numSamples, boolean texture) {
+			this.glAttachment = glAttachment;
+			this.texture = texture;
 			if(texture) {
 				id = glGenTextures();
 				glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, id);
@@ -37,6 +39,8 @@ public class FBO {
 		}
 		
 		protected FBOAttachment(int width, int height, int internalFormat, int pixelFormat, int dataType, int glAttachment, boolean texture) {
+			this.glAttachment = glAttachment;
+			this.texture = texture;
 			if(texture) {
 				id = glGenTextures();
 				glBindTexture(GL_TEXTURE_2D, id);
@@ -95,6 +99,7 @@ public class FBO {
 	
 	public FBO bind() {
 		glBindFramebuffer(GL_FRAMEBUFFER, id);
+		glViewport(0, 0, width, height);
 		return this;
 	}
 	
@@ -107,12 +112,12 @@ public class FBO {
 		return this;
 	}
 	
-	public FBO resolveToDisplay(int sourceAttachment) {
+	public FBO resolveToDisplay(int sourceAttachment, int mode) {
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, id);
 		glReadBuffer(sourceAttachment);
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-		glDrawBuffer(GL_COLOR_ATTACHMENT0);
-		glBlitFramebuffer(0, 0, width, height, 0, 0, DisplayManager.getWidth(), DisplayManager.getHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
+		glDrawBuffer(GL_BACK);
+		glBlitFramebuffer(0, 0, width, height, 0, 0, DisplayManager.getWidth(), DisplayManager.getHeight(), GL_COLOR_BUFFER_BIT, mode);
 		return this;
 	}
 	
@@ -126,5 +131,17 @@ public class FBO {
 		glBindFramebuffer(GL_FRAMEBUFFER, id);
 		glDrawBuffer(GL_COLOR_ATTACHMENT0);
 		return new FBO(id, width, height);
+	}
+	
+	public List<FBOAttachment> getAttachments() {
+		return attachments;
+	}
+
+	public int getWidth() {
+		return width;
+	}
+
+	public int getHeight() {
+		return height;
 	}
 }

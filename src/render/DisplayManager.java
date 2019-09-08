@@ -55,6 +55,8 @@ public class DisplayManager {
 		}
 		
 		glfwMakeContextCurrent(window);
+		// glfwSwapInterval(0);
+		
 		GL.createCapabilities();
 		
 		GLFWVidMode videoMode = glfwGetVideoMode(glfwGetPrimaryMonitor());

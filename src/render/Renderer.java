@@ -33,7 +33,7 @@ public class Renderer {
 	
 	public void prepare() {
 		GL11.glEnable(GL11.GL_DEPTH_TEST);
-		GL11.glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		GL11.glClearColor(0, 0, 0, 1.0f);
 		GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
 	}
 	
@@ -59,6 +59,7 @@ public class Renderer {
 		
 		ModelTexture texture = model.getTexture();
 		shader.loadShineVariables(texture.getShineDamper(), texture.getReflectivity());
+		shader.loadApplyBloom(model.getApplyBloom());
 		
 		GL13.glActiveTexture(GL13.GL_TEXTURE0);
 		GL11.glBindTexture(GL11.GL_TEXTURE_2D, model.getTexture().getID());

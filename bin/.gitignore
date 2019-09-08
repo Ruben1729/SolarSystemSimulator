@@ -1,4 +1,7 @@
-/render/
 /core/
-/model/
+/render/
+/camera/
 /entities/
+/input/
+/shaders/
+/model/
