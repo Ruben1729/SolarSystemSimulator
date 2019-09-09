@@ -55,7 +55,7 @@ public class DisplayManager {
 		}
 		
 		glfwMakeContextCurrent(window);
-		// glfwSwapInterval(0);
+		glfwSwapInterval(0);
 		
 		GL.createCapabilities();
 		

@@ -8,7 +8,7 @@ public class Entity {
 	
 	private TexturedModel model;
 	protected Vector3f position, velocity, rotation;
-	private float scale;
+	protected float scale;
 	
 	public Entity(TexturedModel model, Vector3f position, Vector3f rotation,
 			float scale) {

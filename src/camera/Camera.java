@@ -16,7 +16,7 @@ public abstract class Camera {
 		this.vel = new Vector3f(0);
 	}
 	
-	public abstract void tick();
+	public abstract void tick(float delta);
 	
 	public void setRotation(Vector3f rot) {
 		this.rot = new Vector3f(rot);

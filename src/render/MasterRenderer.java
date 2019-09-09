@@ -15,6 +15,8 @@ import model.Primitive;
 import model.TexturedModel;
 import shaders.StaticShader;
 
+import static org.lwjgl.opengl.GL30.*;
+
 public class MasterRenderer {
 
 	private Matrix4f projectionMatrix;
@@ -31,6 +33,7 @@ public class MasterRenderer {
 		createProjectionMatrix();
 		renderer = new Renderer(projectionMatrix);
 		pRenderer = new PrimitiveRenderer(projectionMatrix);
+		glEnable(GL_LINE_SMOOTH);
 	}
 	
 	public void renderPrimitive(Camera cam, Primitive p) {

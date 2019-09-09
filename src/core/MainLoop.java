@@ -39,7 +39,6 @@ import camera.CameraTPS;
 
 public class MainLoop extends Thread{
 	
-	private static final double TICKS_PER_SEC = 60;
 	private static Thread mainThread;
 	private static DisplayManager display;
 	private static volatile boolean running = false;
@@ -48,8 +47,6 @@ public class MainLoop extends Thread{
 	private static CameraTPS tpsCamera;
 	
 	public static float daySpeed = 6.0f;
-	
-	private static int targetIndex = 0;
 	
 	private static Sun sun;
 	
@@ -88,7 +85,7 @@ public class MainLoop extends Thread{
 		RawModel model = OBJLoader.loadObjModel("/sun/sun", loader);
 		TexturedModel texturedModel = new TexturedModel(model, loader.loadTexture("sun.png", true));
 		texturedModel.setApplyBloom(true);
-		sun = new Sun(texturedModel, new Vector3f(0, 0, 0), new Vector3f(0, 0, 0), 15.1636f);
+		sun = new Sun(texturedModel, new Vector3f(0, 0, 0), new Vector3f(0, 0, 0), 4.6491f);
 		
 		pMan = new PlanetManager(sun);
 		pMan.loadPlanets(loader);
@@ -108,7 +105,6 @@ public class MainLoop extends Thread{
 		long lastTime = System.nanoTime();
 		long lastTick = System.nanoTime();
 		int fps = 0;
-		int ticks = 0;
 		
 		Camera renderCamera;
 		
@@ -116,26 +112,17 @@ public class MainLoop extends Thread{
 		while(!display.close()) {
 			long currentTime = System.nanoTime();
 			if(currentTime - lastTime >= 1000000000) {
-				System.out.println("FPS: " + fps + " | TICKS: " + ticks);
+				System.out.println("FPS: " + fps);
 				fps = 0;
-				ticks = 0;
 				lastTime = currentTime;
-			}
-			
-			// TICK
-			long currentTick = System.nanoTime();
-			if(currentTick - lastTick >= 1000000000 / TICKS_PER_SEC) {
-				tick();
-				
-				ticks ++;
-				lastTick = currentTick;
 			}
 			
 			long currentFrame = System.nanoTime();
 			float deltaTime = ((float) (currentFrame - lastFrame) / 1000000000.0f);
+			tick(deltaTime);
 			lastFrame = currentFrame;
 			
-			sun.increaseRotation(0, -1, 0);
+			sun.increaseRotation(0, -1 * deltaTime, 0);
 			
 			//How to add a new entity
 			renderer.processEntity(sun);
@@ -167,16 +154,16 @@ public class MainLoop extends Thread{
 		loader.cleanUp();
 	}
 	
-	private void tick() {
+	private void tick(float delta) {
 		//logic
 		if(tpsOn)
-			tpsCamera.tick();
+			tpsCamera.tick(delta);
 		else
-			camera.tick();
-		sun.tick();
+			camera.tick(delta);
+		sun.tick(delta);
 
 		for(Planet p : pMan.getPlanets()) {
-			p.tick();
+			p.tick(delta);
 		}
 		
 		centerCursor();

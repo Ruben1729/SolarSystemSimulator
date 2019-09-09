@@ -6,7 +6,7 @@ import entities.Entity;
 
 public class CameraTPS extends Camera{
 	
-	private float distanceFromTarget = 100;
+	private float distanceFromTarget = 20;
 	private float angleAroundTarget = 0;
 	private float pitch = 20;
 	
@@ -16,7 +16,7 @@ public class CameraTPS extends Camera{
 		this.target = target;
 	}
 	
-	public void tick() {
+	public void tick(float delta) {
 		// TODO Auto-generated method stub
 		float pitchChange = (float) (dy * 0.1f);
 		pitch -= pitchChange;
@@ -53,7 +53,8 @@ public class CameraTPS extends Camera{
 	}
 	
 	public void changeDistanceFromTarget(float diff) {
-		this.distanceFromTarget -= diff;
+		if(this.distanceFromTarget - diff > 0)
+			this.distanceFromTarget -= (diff);
 	}
 
 }

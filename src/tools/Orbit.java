@@ -5,6 +5,8 @@ import java.util.List;
 
 import org.joml.Vector3f;
 
+import entities.Planet;
+
 public class Orbit {
 
 	private float a, b, c;
@@ -50,17 +52,15 @@ public class Orbit {
 		this.alpha = 0;
 	}
 	
-	public void tick() {
-		
+	public void tick(float delta) {
 		center = new Vector3f(focus.x + c, focus.z, 0);
 		
 		float dist = distance(pos, center);
-		
 		float deltaAlpha = (float)Math.asin(getVel()/dist);
 		
 		pos = new Vector3f((float)((center.x + a) * Math.cos(alpha)), 0, (float)((center.z + b) * Math.sin(alpha)));
-		
-		alpha += deltaAlpha;
+
+		alpha += (deltaAlpha * 0.01);
 		
 	}
 	
@@ -69,7 +69,7 @@ public class Orbit {
 		center = new Vector3f(focus.x + c, focus.z, 0);
 		List<Vector3f> points = new ArrayList<Vector3f>();
 		
-		for(float beta = 0; beta < 360; beta ++ ) {
+		for(float beta = 0; beta < 360; beta += 0.01 ) {
 			pos = new Vector3f((float)((center.x + a) * Math.cos(Math.toRadians(beta))), 0, (float)((center.z + b) * Math.sin(Math.toRadians(beta))));
 			points.add(pos);
 		}
@@ -77,14 +77,14 @@ public class Orbit {
 	}
 	
 	public float getZGivenX(float x) {
-		return (float)(this.center.z +  (b * (Math.sqrt(1 - ((Math.pow(x, 2) - Math.pow(center.x, 2)/Math.pow(a, 2)))))));
+		return (float)(this.center.z + (b * (Math.sqrt(1 - ((Math.pow(x, 2) - Math.pow(center.x, 2)/Math.pow(a, 2)))))));
 	}
 	public float getNegZGivenX(float x) {
 		return (float)(this.center.z - (b * (Math.sqrt(1 - ((Math.pow(x, 2) - Math.pow(center.x, 2)/Math.pow(a, 2)))))));
 	}
 	
 	public double getVel() {
-		return Math.sqrt((G*mass)*(Math.abs(2/distanceFromOrbit()) - (1/a)));
+		return Math.sqrt((G*(mass*1e4))*(Math.abs(2/distanceFromOrbit()) - (1/a)));
 	}
 	
 	public double distanceFromOrbit() {

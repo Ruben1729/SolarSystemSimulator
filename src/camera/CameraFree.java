@@ -8,20 +8,15 @@ public class CameraFree extends Camera {
 	
 	private boolean forward = false, backward = false, left = false,  right = false;
 	
-	private int speed = 5;
+	private int speed = 50;
 	
 	public CameraFree() {
 		
 	}
 	
-	public void tick() {
+	public void tick(float delta) {
 		rotate(new Vector3f((float) (dy * 0.1f), (float) (-dx * 0.1f), 0));
 		
-		updateVelocity();
-		translate(getVelocity());
-	}
-	
-	private void updateVelocity() {
 		Vector3f direction = new Vector3f(0);
 		
 		if(forward)
@@ -37,8 +32,10 @@ public class CameraFree extends Camera {
 			direction.add(right());
 		
 		// speed
-		direction.mul(speed);
+		direction.mul(speed * delta);
+		
 		setVelocity(direction);
+		translate(getVelocity());
 	}
 	
 	private Vector3f right() {
