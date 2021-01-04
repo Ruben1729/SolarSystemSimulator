@@ -1,5 +1,7 @@
 # SolarSystemSimulator
 
+Solar System Simulator I made in Java for fun.
+
 # General Keybinds
 R - increases the speed of the planet rotation
 F - decreases the speed of the planet rotation
